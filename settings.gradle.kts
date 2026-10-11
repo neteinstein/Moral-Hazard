@@ -18,7 +18,8 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // Not FAIL_ON_PROJECT_REPOS: the Kotlin/Wasm plugin adds its own toolchain repositories (Node.js,
+    // Binaryen, Yarn) at the project level. Modules must still never declare repositories themselves.
     repositories {
         google {
             mavenContent {

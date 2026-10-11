@@ -186,6 +186,8 @@ Keep the tone: dark, absurd, aimed at the player or at institutions, never at re
   Firebase credentials.
 - **ktlint**: style is `android_studio` via `.editorconfig`; composables are exempt from function naming;
   `data/**` files may exceed the line length so content strings aren't split mid-sentence.
+- **Repositories live only in `settings.gradle.kts`.** The mode is not `FAIL_ON_PROJECT_REPOS` because the
+  Kotlin/Wasm plugin registers Node.js/Binaryen download repositories itself; don't add repositories in modules.
 - **Configuration cache is on.** Don't read env vars / files eagerly in build scripts; use `providers.*`.
 
 ## Further reading
