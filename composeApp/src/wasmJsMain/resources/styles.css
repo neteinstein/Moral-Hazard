@@ -1,0 +1,46 @@
+:root {
+    color-scheme: light dark;
+    --bg: #FBF5EE;
+    --fg: #1E1620;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0D0A10;
+        --fg: #E9E1EA;
+    }
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--fg);
+}
+
+#splash {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, "Times New Roman", serif;
+    letter-spacing: 0.08em;
+    pointer-events: none;
+    animation: pulse 1.6s ease-in-out infinite;
+}
+
+/* Compose appends its canvas to <body>; hide the splash once it exists. */
+body > canvas ~ #splash,
+body:has(canvas) #splash {
+    display: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+}

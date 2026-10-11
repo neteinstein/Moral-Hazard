@@ -1,0 +1,44 @@
+# --- Gradle / Kotlin ---
+.gradle/
+build/
+!**/src/**/build/
+.kotlin/
+local.properties
+*.hprof
+
+# --- IDEs ---
+.idea/
+!.idea/codeStyles/
+*.iml
+*.ipr
+*.iws
+.fleet/
+.vscode/
+captures/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Xcode ---
+xcuserdata/
+DerivedData/
+*.xcuserstate
+iosApp/iosApp.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+*.xcarchive
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# --- Web / Node ---
+node_modules/
+
+# --- Platform secrets: NEVER commit real credentials ---
+# CI copies the committed *.ci placeholders in for build validation only; real files come from CI secrets.
+google-services.json
+GoogleService-Info.plist
+*.jks
+*.keystore
+keystore.properties
+*.p12
+*.mobileprovision

@@ -1,0 +1,5 @@
+// Per-developer/CI values. TEAM_ID stays empty in the repo; set it locally (or via xcodebuild
+// DEVELOPMENT_TEAM=...) when signing for a device.
+TEAM_ID=
+BUNDLE_ID=com.neteinstein.moralhazard
+APP_NAME=Moral Hazard
