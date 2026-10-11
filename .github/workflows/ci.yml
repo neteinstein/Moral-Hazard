@@ -1,0 +1,182 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+  JAVA_VERSION: "21"
+
+# All jobs run in parallel. Each one that configures :androidApp needs a google-services.json:
+# the real one from the GOOGLE_SERVICES_JSON secret when available, otherwise the committed placeholder.
+jobs:
+  build-android:
+    name: Build · Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Provide google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: ./scripts/ci/provide-google-services.sh
+      - name: Assemble debug + release (R8)
+        run: ./gradlew :androidApp:assembleDebug :androidApp:assembleRelease
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-apks
+          path: |
+            androidApp/build/outputs/apk/**/*.apk
+            androidApp/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
+
+  unit-tests:
+    name: Unit tests (JVM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Provide google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: ./scripts/ci/provide-google-services.sh
+      - name: Run commonTest on the JVM
+        run: ./gradlew testAndroidHostTest
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-reports
+          path: "**/build/reports/tests/"
+          if-no-files-found: ignore
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Provide google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: ./scripts/ci/provide-google-services.sh
+      - name: ktlint + Android lint
+        run: ./gradlew ktlintCheck :androidApp:lintDebug
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: lint-reports
+          path: |
+            **/build/reports/ktlint/
+            androidApp/build/reports/lint-results-*.html
+          if-no-files-found: ignore
+
+  coverage:
+    name: Coverage (Kover)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Provide google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: ./scripts/ci/provide-google-services.sh
+      - name: Aggregate coverage
+        run: ./gradlew koverXmlReport koverHtmlReport koverLog
+      - name: Coverage summary
+        run: |
+          {
+            echo "### Coverage"
+            echo '```'
+            cat build/kover/reports/log/*.txt 2>/dev/null || find build -name 'koverLog*' -exec cat {} \; || echo "no kover log found"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: build/reports/kover/
+          if-no-files-found: warn
+
+  build-web:
+    name: Build · Web (Wasm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Provide google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: ./scripts/ci/provide-google-services.sh
+      - name: Build production web bundle
+        run: ./gradlew :composeApp:wasmJsBrowserDistribution
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-dist
+          path: composeApp/build/dist/wasmJs/productionExecutable/
+          if-no-files-found: error
+
+  build-ios:
+    name: Build · iOS (simulator)
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Provide google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: ./scripts/ci/provide-google-services.sh
+      - name: Cache Kotlin/Native toolchain
+        uses: actions/cache@v6
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+      - name: xcodebuild (unsigned, simulator)
+        run: |
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            build
