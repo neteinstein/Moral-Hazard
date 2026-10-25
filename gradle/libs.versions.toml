@@ -35,7 +35,7 @@ androidx-activity = "1.13.0"
 androidx-splashscreen = "1.2.0"
 
 # Firebase (androidApp only)
-firebase-bom = "34.19.0"
+firebase-bom = "35.1.0"
 
 [libraries]
 # Compose Multiplatform
