@@ -9,7 +9,7 @@ android-targetSdk = "37"
 android-minSdk = "32"
 
 # Build tooling
-agp = "9.4.0"
+agp = "9.4.1"
 kotlin = "2.4.21"
 compose-multiplatform = "1.12.1"
 kover = "0.9.11"
