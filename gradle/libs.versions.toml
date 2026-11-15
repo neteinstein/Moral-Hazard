@@ -15,7 +15,7 @@ compose-multiplatform = "1.12.1"
 kover = "0.9.11"
 ktlint-gradle = "14.2.0"
 ktlint = "1.8.0"
-google-services = "4.5.0"
+google-services = "4.6.0"
 firebase-crashlytics-plugin = "3.0.8"
 
 # Compose Multiplatform libraries (JetBrains-published)
